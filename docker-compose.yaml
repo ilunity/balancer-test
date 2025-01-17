@@ -1,0 +1,57 @@
+services:
+  zookeeper:
+    image: ubuntu/zookeeper
+    hostname: zookeeper
+    networks:
+      - internal
+    ports:
+      - 2181:2181
+
+  kafka:
+    image: ubuntu/kafka
+    depends_on:
+      - zookeeper
+    hostname: kafka
+    networks:
+      - internal
+    ports:
+      - 9092:9092
+
+  app-server:
+    image: ilunity/bt-app-server
+    build: ./app-server
+    container_name: app-server
+    restart: always
+    hostname: app-server
+    networks:
+      - internal
+    ports:
+      - 5000:5000
+    depends_on:
+      - kafka
+
+  calculation-server:
+    image: ilunity/bt-calc-server
+    build: ./calculation-server
+    container_name: calculation-server
+    restart: always
+    hostname: calculation-server
+    networks:
+      - internal
+    depends_on:
+      - kafka
+      - app-server
+    deploy:
+      replicas: 6
+
+  client:
+    image: ilunity/bt-client
+    build: ./client
+    container_name: client
+    ports:
+      - 3000:3000
+    depends_on:
+      - calculation-server
+
+networks:
+  internal:
